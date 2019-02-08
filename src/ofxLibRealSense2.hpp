@@ -6,7 +6,7 @@
 //
 
 #pragma once
-#include <librealsense2/include/librealsense2/rs.hpp>
+#include "librealsense2/rs.hpp"
 #include "ofThread.h"
 #include "ofTexture.h"
 #include "ofxGui.h"
