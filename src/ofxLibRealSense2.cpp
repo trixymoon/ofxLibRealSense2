@@ -13,7 +13,7 @@ using namespace::std;
 
 int ofxLibRealSense2::getDeviceCount()
 {
-    //// query device
+    // query device
     rs2::context ctx;
     return ctx.query_devices().size();
 }
@@ -37,7 +37,7 @@ void ofxLibRealSense2::setupDevice(int deviceID)
     _device = deviceList[deviceID];
     string deviceSerial = _device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
     _config.enable_device(deviceSerial);
-    cout << "Device name is: " << _device.get_info(RS2_CAMERA_INFO_NAME) << endl;
+    cout << "Serial number: " << deviceSerial << " | Device name: " << _device.get_info(RS2_CAMERA_INFO_NAME) << endl;
     
     _curDeviceID = deviceID;
     _setupFinished = true;
@@ -90,6 +90,12 @@ void ofxLibRealSense2::startPipeline(bool useThread)
         startThread();
 }
 
+void ofxLibRealSense2::enablePointcloud(bool enabled)
+{
+    _pointcloudEnabled = enabled;
+    if (!_depthEnabled) ofLogWarning() << "processing a pointcloud requires to enable depth data!";
+}
+
 
 
 void ofxLibRealSense2::threadedFunction()
@@ -132,6 +138,10 @@ void ofxLibRealSense2::updateFrameData()
             _depthWidth = depthFrame.get_width();
             _depthHeight = depthFrame.get_height();
             _hasNewDepth = true;
+            
+            if (_pointcloudEnabled) {
+                _points = _pointcloud.process(depthFrame);
+            }
         }
     }
 }
@@ -149,6 +159,23 @@ void ofxLibRealSense2::update()
     _hasNewFrame = _hasNewColor | _hasNewIr | _hasNewDepth;
 
     if(_depthBuff && _hasNewDepth) {
+        if (_pointcloudEnabled) {
+            _mesh.clear();
+            int n = _points.size();
+            if(n!=0){
+                const rs2::vertex * vs = _points.get_vertices();
+                for(int i=0; i<n; i++){
+                    if(vs[i].z >= _depthMin && vs[i].z <= _depthMax){
+                        
+                        const rs2::vertex v = vs[i];
+                        glm::vec3 v3(v.x,v.y,v.z);
+                        ofFloatColor color(ofMap(v.z, _depthMin, _depthMax, 1, 0.25));
+                        _mesh.addVertex(v3);
+                        _mesh.addColor(color);
+                    }
+                }
+            }
+        }
         _rawDepthTex.loadData(_rawDepthBuff, _depthWidth, _depthHeight, GL_LUMINANCE);
         _depthTex.loadData(_depthBuff, _depthWidth, _depthHeight, GL_RGB);
         _hasNewDepth = false;
@@ -169,10 +196,10 @@ void ofxLibRealSense2::update()
 void ofxLibRealSense2::setupGUI(string serialNumber)
 {
     rs2::sensor sensor = _device.query_sensors()[0];
-    rs2::option_range orExp = sensor.get_option_range(RS2_OPTION_EXPOSURE);
-    rs2::option_range orGain = sensor.get_option_range(RS2_OPTION_GAIN);
-    rs2::option_range orMinDist = _colorizer.get_option_range(RS2_OPTION_MIN_DISTANCE);
-    rs2::option_range orMaxDist = _colorizer.get_option_range(RS2_OPTION_MAX_DISTANCE);
+    rs2::option_range orExp = sensor.get_option_range(rs2_option::RS2_OPTION_EXPOSURE);
+    rs2::option_range orGain = sensor.get_option_range(rs2_option::RS2_OPTION_GAIN);
+    rs2::option_range orMinDist = _colorizer.get_option_range(rs2_option::RS2_OPTION_MIN_DISTANCE);
+    rs2::option_range orMaxDist = _colorizer.get_option_range(rs2_option::RS2_OPTION_MAX_DISTANCE);
 
     _D400Params.setup("D400_" + serialNumber);
     _D400Params.add( _autoExposure.setup("Auto exposure", true) );
@@ -204,20 +231,20 @@ void ofxLibRealSense2::onD400IntParamChanged(int &value)
 {
     if(!_pipelineStarted) return;
     rs2::sensor sensor = _pipeline.get_active_profile().get_device().first<rs2::depth_sensor>();
-    if(sensor.supports(RS2_OPTION_EXPOSURE))
-        sensor.set_option(RS2_OPTION_EXPOSURE, (float)_irExposure);
+    if(sensor.supports(rs2_option::RS2_OPTION_EXPOSURE))
+        sensor.set_option(rs2_option::RS2_OPTION_EXPOSURE, (float)_irExposure);
 }
 
 
 void ofxLibRealSense2::onD400ColorizerParamChanged(float &value)
 {
     if(!_pipelineStarted) return;
-    _colorizer.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0);
+    _colorizer.set_option(rs2_option::RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0);
     
-    if(_colorizer.supports(RS2_OPTION_MIN_DISTANCE))
-        _colorizer.set_option(RS2_OPTION_MIN_DISTANCE, _depthMin);
-    if(_colorizer.supports(RS2_OPTION_MAX_DISTANCE))
-        _colorizer.set_option(RS2_OPTION_MAX_DISTANCE, _depthMax);
+    if(_colorizer.supports(rs2_option::RS2_OPTION_MIN_DISTANCE))
+        _colorizer.set_option(rs2_option::RS2_OPTION_MIN_DISTANCE, _depthMin);
+    if(_colorizer.supports(rs2_option::RS2_OPTION_MAX_DISTANCE))
+        _colorizer.set_option(rs2_option::RS2_OPTION_MAX_DISTANCE, _depthMax);
 }
 
 
@@ -231,5 +258,5 @@ void ofxLibRealSense2::exit()
 {
     waitForThread();
     stopThread();
-//    _pipeline.stop();
+    if (_pipelineStarted) _pipeline.stop();
 }
