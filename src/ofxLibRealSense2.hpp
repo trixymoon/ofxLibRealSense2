@@ -73,16 +73,17 @@ private:
     bool            _hasNewColor, _hasNewIr, _hasNewDepth, _hasNewFrame;
     
     ofxGuiGroup     _D400Params;
+    ofParameterGroup _params;
     ofParameter<bool> _autoExposure;
     ofParameter<bool> _enableEmitter;
     ofParameter<int> _irExposure;
     ofParameter<float> _depthMin{ "Min Depth", true };
     ofParameter<float> _depthMax{ "Max Depth", true };
+    ofEventListeners _paramListeners;
 
     void threadedFunction();
     void updateFrameData();
-    void setupGUI(std::string serialNumber);
-    void onD400BoolParamChanged(bool &value);
-    void onD400IntParamChanged(int &value);
-    void onD400ColorizerParamChanged(float &value);
+
+    void setupParams(const std::string & serialNumber);
+    void setupGUI();
 };
