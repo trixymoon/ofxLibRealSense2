@@ -6,7 +6,9 @@
 //
 
 #pragma once
+
 #include "librealsense2/rs.hpp"
+#include "ofParameter.h"
 #include "ofThread.h"
 #include "ofTexture.h"
 #include "ofxGui.h"
@@ -71,12 +73,12 @@ private:
     bool            _hasNewColor, _hasNewIr, _hasNewDepth, _hasNewFrame;
     
     ofxGuiGroup     _D400Params;
-    ofxToggle       _autoExposure;
-    ofxToggle       _enableEmitter;
-    ofxIntSlider    _irExposure;
-    ofxFloatSlider  _depthMin;
-    ofxFloatSlider  _depthMax;
-    
+    ofParameter<bool> _autoExposure;
+    ofParameter<bool> _enableEmitter;
+    ofParameter<int> _irExposure;
+    ofParameter<float> _depthMin{ "Min Depth", true };
+    ofParameter<float> _depthMax{ "Max Depth", true };
+
     void threadedFunction();
     void updateFrameData();
     void setupGUI(std::string serialNumber);

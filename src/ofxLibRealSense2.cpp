@@ -202,11 +202,11 @@ void ofxLibRealSense2::setupGUI(string serialNumber)
     rs2::option_range orMaxDist = _colorizer.get_option_range(rs2_option::RS2_OPTION_MAX_DISTANCE);
 
     _D400Params.setup("D400_" + serialNumber);
-    _D400Params.add( _autoExposure.setup("Auto exposure", true) );
-    _D400Params.add( _enableEmitter.setup("Emitter", true) );
-    _D400Params.add( _irExposure.setup("IR Exposure", orExp.def, orExp.min, 26000 ));
-    _D400Params.add( _depthMin.setup("Min Depth", orMinDist.def, orMinDist.min, orMinDist.max));
-    _D400Params.add( _depthMax.setup("Max Depth", orMaxDist.def, orMaxDist.min, orMaxDist.max));
+    _D400Params.add( _autoExposure.set("Auto-exposure", true ) );
+    _D400Params.add( _enableEmitter.set("Emitter", true) );
+    _D400Params.add( _irExposure.set("IR Exposure", orExp.def, orExp.min, 26000 ));
+    _D400Params.add( _depthMin.set("Min Depth", orMinDist.def, orMinDist.min, orMinDist.max));
+    _D400Params.add( _depthMax.set("Max Depth", orMaxDist.def, orMaxDist.min, orMaxDist.max));
     
     _autoExposure.addListener(this, &ofxLibRealSense2::onD400BoolParamChanged);
     _enableEmitter.addListener(this, &ofxLibRealSense2::onD400BoolParamChanged);
