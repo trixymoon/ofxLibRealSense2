@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxGui.h"
 #include "ofxLibRealSense2.hpp"
 
 class ofApp : public ofBaseApp{

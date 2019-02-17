@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxGui.h"
 #include "ofxLibRealSense2.hpp"
 
 class ofApp : public ofBaseApp{
@@ -12,6 +13,6 @@ public:
     void exit();
     void keyPressed(int key);
     
-    vector<ofxLibRealSense2*> _rsList;
+    std::vector<std::shared_ptr<ofxLibRealSense2>> _rsList;
     ofxPanel         _gui;
 };

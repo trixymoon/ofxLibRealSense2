@@ -11,7 +11,7 @@ void ofApp::setup(){
     _realsense2.startPipeline(true);
     
     _gui.setup("appSettings.xml");
-    _gui.add(_realsense2.getGui());
+    _gui.add(_realsense2.params);
 }
 
 //--------------------------------------------------------------

@@ -10,7 +10,7 @@ void ofApp::setup(){
     _realsense2.startPipeline(true);
     
     _gui.setup("appSettings.xml");
-    _gui.add(_realsense2.getGui());
+    _gui.add(_realsense2.params);
 }
 
 //--------------------------------------------------------------
@@ -30,7 +30,7 @@ void ofApp::draw(){
     
     _cam.begin();
     float s = 200;
-    ofScale(s,-s,-s);
+    ofScale(s,-s,-s); 
     ofDrawAxis(1);
     
     ofPushMatrix();
