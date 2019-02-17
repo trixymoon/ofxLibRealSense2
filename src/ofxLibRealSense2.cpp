@@ -42,7 +42,7 @@ void ofxLibRealSense2::setupDevice(int deviceID)
     _curDeviceID = deviceID;
     _setupFinished = true;
     
-    setupGUI(deviceSerial);
+    setupParams(deviceSerial);
 }
 
 
@@ -165,11 +165,11 @@ void ofxLibRealSense2::update()
             if(n!=0){
                 const rs2::vertex * vs = _points.get_vertices();
                 for(int i=0; i<n; i++){
-                    if(vs[i].z >= _depthMin && vs[i].z <= _depthMax){
+                    if(vs[i].z >= depthMin && vs[i].z <= depthMax){
                         
                         const rs2::vertex v = vs[i];
                         glm::vec3 v3(v.x,v.y,v.z);
-                        ofFloatColor color(ofMap(v.z, _depthMin, _depthMax, 1, 0.25));
+                        ofFloatColor color(ofMap(v.z, depthMin, depthMax, 1, 0.25));
                         _mesh.addVertex(v3);
                         _mesh.addColor(color);
                     }
@@ -192,8 +192,7 @@ void ofxLibRealSense2::update()
     }
 }
 
-
-void ofxLibRealSense2::setupGUI(string serialNumber)
+void ofxLibRealSense2::setupParams(const std::string & serialNumber)
 {
     rs2::sensor sensor = _device.query_sensors()[0];
     rs2::option_range orExp = sensor.get_option_range(rs2_option::RS2_OPTION_EXPOSURE);
@@ -201,58 +200,74 @@ void ofxLibRealSense2::setupGUI(string serialNumber)
     rs2::option_range orMinDist = _colorizer.get_option_range(rs2_option::RS2_OPTION_MIN_DISTANCE);
     rs2::option_range orMaxDist = _colorizer.get_option_range(rs2_option::RS2_OPTION_MAX_DISTANCE);
 
-    _D400Params.setup("D400_" + serialNumber);
-    _D400Params.add( _autoExposure.setup("Auto exposure", true) );
-    _D400Params.add( _enableEmitter.setup("Emitter", true) );
-    _D400Params.add( _irExposure.setup("IR Exposure", orExp.def, orExp.min, 26000 ));
-    _D400Params.add( _depthMin.setup("Min Depth", orMinDist.def, orMinDist.min, orMinDist.max));
-    _D400Params.add( _depthMax.setup("Max Depth", orMaxDist.def, orMaxDist.min, orMaxDist.max));
-    
-    _autoExposure.addListener(this, &ofxLibRealSense2::onD400BoolParamChanged);
-    _enableEmitter.addListener(this, &ofxLibRealSense2::onD400BoolParamChanged);
-    _irExposure.addListener(this, &ofxLibRealSense2::onD400IntParamChanged);
-    _depthMin.addListener(this, &ofxLibRealSense2::onD400ColorizerParamChanged);
-    _depthMax.addListener(this, &ofxLibRealSense2::onD400ColorizerParamChanged);
+    autoExposure.set("Auto-exposure", true);
+    enableEmitter.set("Emitter", true);
+    irExposure.set("IR Exposure", orExp.def, orExp.min, 26000);
+    depthMin.set("Min Depth", orMinDist.def, orMinDist.min, orMinDist.max);
+    depthMax.set("Max Depth", orMaxDist.def, orMaxDist.min, orMaxDist.max);
+
+    _paramListeners.push(autoExposure.newListener([this](bool &)
+    {
+        if (!_pipelineStarted) return;
+
+        rs2::sensor sensor = _pipeline.get_active_profile().get_device().first<rs2::depth_sensor>();
+        if (sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
+        {
+            sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, autoExposure ? 1.0f : 0.0f);
+        }
+    }));
+
+    _paramListeners.push(enableEmitter.newListener([this](bool &)
+    {
+        if (!_pipelineStarted) return;
+
+        rs2::sensor sensor = _pipeline.get_active_profile().get_device().first<rs2::depth_sensor>();
+        if (sensor.supports(RS2_OPTION_EMITTER_ENABLED))
+        {
+            sensor.set_option(RS2_OPTION_EMITTER_ENABLED, enableEmitter ? 1.0f : 0.0f);
+        }
+    }));
+
+    _paramListeners.push(irExposure.newListener([this](int &)
+    {
+        if (!_pipelineStarted) return;
+
+        rs2::sensor sensor = _pipeline.get_active_profile().get_device().first<rs2::depth_sensor>();
+        if (sensor.supports(rs2_option::RS2_OPTION_EXPOSURE))
+        {
+            sensor.set_option(rs2_option::RS2_OPTION_EXPOSURE, (float)irExposure);
+        }
+    }));
+
+    _paramListeners.push(depthMin.newListener([this](float &)
+    {
+        if (!_pipelineStarted) return;
+
+        _colorizer.set_option(rs2_option::RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0);
+
+        if (_colorizer.supports(rs2_option::RS2_OPTION_MIN_DISTANCE))
+        {
+            _colorizer.set_option(rs2_option::RS2_OPTION_MIN_DISTANCE, depthMin);
+        }
+        if (_colorizer.supports(rs2_option::RS2_OPTION_MAX_DISTANCE))
+            _colorizer.set_option(rs2_option::RS2_OPTION_MAX_DISTANCE, depthMax);
+    }));
+
+    _paramListeners.push(depthMax.newListener([this](float &)
+    {
+        if (!_pipelineStarted) return;
+
+        _colorizer.set_option(rs2_option::RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0);
+
+        if (_colorizer.supports(rs2_option::RS2_OPTION_MAX_DISTANCE))
+        {
+            _colorizer.set_option(rs2_option::RS2_OPTION_MAX_DISTANCE, depthMax);
+        }
+    }));
+
+    params.setName("D400_" + serialNumber);
+    params.add(autoExposure, enableEmitter, irExposure, depthMin, depthMax);
 }
-
-
-void ofxLibRealSense2::onD400BoolParamChanged(bool &value)
-{
-    if(!_pipelineStarted) return;
-    rs2::sensor sensor = _pipeline.get_active_profile().get_device().first<rs2::depth_sensor>();
-    if(sensor.supports(RS2_OPTION_ENABLE_AUTO_EXPOSURE))
-        sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, _autoExposure?1.0f:0.0f);
-    if(sensor.supports(RS2_OPTION_EMITTER_ENABLED))
-        sensor.set_option(RS2_OPTION_EMITTER_ENABLED, _enableEmitter?1.0f:0.0f);
-}
-
-
-void ofxLibRealSense2::onD400IntParamChanged(int &value)
-{
-    if(!_pipelineStarted) return;
-    rs2::sensor sensor = _pipeline.get_active_profile().get_device().first<rs2::depth_sensor>();
-    if(sensor.supports(rs2_option::RS2_OPTION_EXPOSURE))
-        sensor.set_option(rs2_option::RS2_OPTION_EXPOSURE, (float)_irExposure);
-}
-
-
-void ofxLibRealSense2::onD400ColorizerParamChanged(float &value)
-{
-    if(!_pipelineStarted) return;
-    _colorizer.set_option(rs2_option::RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0);
-    
-    if(_colorizer.supports(rs2_option::RS2_OPTION_MIN_DISTANCE))
-        _colorizer.set_option(rs2_option::RS2_OPTION_MIN_DISTANCE, _depthMin);
-    if(_colorizer.supports(rs2_option::RS2_OPTION_MAX_DISTANCE))
-        _colorizer.set_option(rs2_option::RS2_OPTION_MAX_DISTANCE, _depthMax);
-}
-
-
-ofxGuiGroup* ofxLibRealSense2::getGui()
-{
-    return &_D400Params;
-}
-
 
 void ofxLibRealSense2::exit()
 {

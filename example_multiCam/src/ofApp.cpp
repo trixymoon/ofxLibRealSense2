@@ -13,7 +13,7 @@ void ofApp::setup(){
         _rsList.back()->setupDevice(i);
         _rsList.back()->setupColor(640, 360, 30);
         _rsList.back()->startPipeline(true);
-        _gui.add(_rsList.back()->getGui());
+        _gui.add(rs->params);
     }
 }
 

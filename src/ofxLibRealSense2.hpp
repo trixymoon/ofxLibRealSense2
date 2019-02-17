@@ -6,10 +6,15 @@
 //
 
 #pragma once
+
 #include "librealsense2/rs.hpp"
+#include "ofParameter.h"
 #include "ofThread.h"
 #include "ofTexture.h"
+#include "ofVboMesh.h"
+#ifdef USE_OFXGUI
 #include "ofxGui.h"
+#endif
 
 class ofxLibRealSense2 : public ofThread
 {
@@ -43,11 +48,17 @@ public:
     bool irEnabled()             { return _irEnabled; }
     bool depthEnabled()          { return _depthEnabled; }
     bool pointcloudEnabled()     { return (_pointcloudEnabled && _depthEnabled); }
-    
-    ofxGuiGroup *getGui();
-    
+
     ofxLibRealSense2() : _setupFinished(false), _colorEnabled(false), _irEnabled(false), _depthEnabled(false), _pointcloudEnabled(false), _pipelineStarted(false), _useThread(false) {}
-    
+
+public:
+    ofParameterGroup params;
+    ofParameter<bool> autoExposure;
+    ofParameter<bool> enableEmitter;
+    ofParameter<int> irExposure;
+    ofParameter<float> depthMin;
+    ofParameter<float> depthMax;
+
 private:
     rs2::device     _device;
     int             _curDeviceID;
@@ -69,18 +80,11 @@ private:
     ofVboMesh       _mesh;
     ofTexture       _colTex, _irTex, _depthTex, _rawDepthTex;
     bool            _hasNewColor, _hasNewIr, _hasNewDepth, _hasNewFrame;
-    
-    ofxGuiGroup     _D400Params;
-    ofxToggle       _autoExposure;
-    ofxToggle       _enableEmitter;
-    ofxIntSlider    _irExposure;
-    ofxFloatSlider  _depthMin;
-    ofxFloatSlider  _depthMax;
-    
+
+    ofEventListeners _paramListeners;
+
+    void setupParams(const std::string & serialNumber);
+
     void threadedFunction();
     void updateFrameData();
-    void setupGUI(std::string serialNumber);
-    void onD400BoolParamChanged(bool &value);
-    void onD400IntParamChanged(int &value);
-    void onD400ColorizerParamChanged(float &value);
 };
