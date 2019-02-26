@@ -7,3 +7,5 @@ My implementation is very limited for now.
 You can only grab Color, IR, Depth buffers from RS2 devices.  
   
 Tested on macOS 10.13.4 with oF 0.10.0
+
+Tested on Linux Devuan Ascii / Debian Stretch with oF 0.10.1
