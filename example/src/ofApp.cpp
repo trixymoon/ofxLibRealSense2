@@ -1,15 +1,16 @@
 #include "ofApp.h"
 
 //--------------------------------------------------------------
-void ofApp::setup(){
-    
+void ofApp::setup()
+throw(std::runtime_error){
+
     ofSetVerticalSync(false);
     _realsense2.setupDevice(0);
     _realsense2.setupColor(640, 360, 30);
     _realsense2.setupIR(640, 360, 30);
     _realsense2.setupDepth(640, 360, 30);
     _realsense2.startPipeline(true);
-    
+
     _gui.setup("appSettings.xml");
     _gui.add(_realsense2.params);
 }
@@ -22,20 +23,20 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofBackground(0);
-    
+
     if(_realsense2.colorEnabled())
         _realsense2.getColorTex()->draw(0, 0);
-    
+
     if(_realsense2.irEnabled())
         _realsense2.getIrTex()->draw(640, 0);
-    
+
     if(_realsense2.depthEnabled()) {
         _realsense2.getRawDepthTex()->draw(0, 360);
         _realsense2.getDepthTex()->draw(640, 360);
     }
-    
+
     ofDrawBitmapString(ofToString(ofGetFrameRate()), 10, 10);
-    
+
     _gui.draw();
 }
 

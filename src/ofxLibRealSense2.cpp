@@ -11,6 +11,16 @@
 
 using namespace::std;
 
+ofxLibRealSense2::ofxLibRealSense2() :
+	_setupFinished(false),
+	_colorEnabled(false),
+	_irEnabled(false),
+	_depthEnabled(false),
+	_pointcloudEnabled(false),
+	_pipelineStarted(false),
+	_useThread(false)
+{}
+
 int ofxLibRealSense2::getDeviceCount()
 {
     // query device
@@ -20,18 +30,17 @@ int ofxLibRealSense2::getDeviceCount()
 
 
 void ofxLibRealSense2::setupDevice(int deviceID)
+throw(std::runtime_error)
 {
     // query device
     rs2::context ctx;
     rs2::device_list deviceList = ctx.query_devices();
     
-    if(deviceList.size() <= 0) {
-        ofSystemAlertDialog("RealSense device not found!");
-        return;
+    if (deviceList.size() <= 0) {
+        throw std::runtime_error{"RealSense device not found!"};
     }
     if (deviceID >= deviceList.size()) {
-        ofSystemAlertDialog("Requested device id is invalid");
-        return;
+        throw std::runtime_error{"Requested device id is invalid!"};
     }
     
     _device = deviceList[deviceID];
@@ -96,6 +105,9 @@ void ofxLibRealSense2::enablePointcloud(bool enabled)
     if (!_depthEnabled) ofLogWarning() << "processing a pointcloud requires to enable depth data!";
 }
 
+void ofxLibRealSense2::hwReset(rs2_error ** error) {
+	//rs2_hardware_reset(&_device, error);
+}
 
 
 void ofxLibRealSense2::threadedFunction()

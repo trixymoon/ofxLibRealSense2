@@ -20,9 +20,8 @@ class ofxLibRealSense2 : public ofThread
 {
 public:
     static int getDeviceCount();
-    
-public:
-    void setupDevice(int deviceID);
+
+    void setupDevice(int deviceID) throw(std::runtime_error);
     void setupColor(int width, int height, int fps=60);
     void setupIR(int width, int height, int fps=60);
     void setupDepth(int width, int height, int fps=60);
@@ -30,13 +29,13 @@ public:
     void enablePointcloud(bool enabled);
     void update();
     void exit();
-    
+
     ofTexture*  getColorTex()    { return &_colTex; }
     ofTexture*  getIrTex()       { return &_irTex; }
     ofTexture*  getDepthTex()    { return &_depthTex; }
     ofTexture*  getRawDepthTex() { return &_rawDepthTex; }
     ofVboMesh*  getVboMesh()     { return &_mesh; }
-    
+
     int getColorWidth()          { return _colorWidth; }
     int getColorHeight()         { return _colorHeight; }
     int getIrWidth()             { return _irWidth; }
@@ -49,32 +48,38 @@ public:
     bool depthEnabled()          { return _depthEnabled; }
     bool pointcloudEnabled()     { return (_pointcloudEnabled && _depthEnabled); }
 
-    ofxLibRealSense2() : _setupFinished(false), _colorEnabled(false), _irEnabled(false), _depthEnabled(false), _pointcloudEnabled(false), _pipelineStarted(false), _useThread(false) {}
+    void hwReset(rs2_error ** error);
 
-public:
-    ofParameterGroup params;
-    ofParameter<bool> autoExposure;
-    ofParameter<bool> enableEmitter;
-    ofParameter<int> irExposure;
+    /** Class constructor */
+    ofxLibRealSense2();
+
+    /* gui params */
+    ofParameterGroup   params;
+    ofParameter<bool>  autoExposure;
+    ofParameter<bool>  enableEmitter;
+    ofParameter<int>   irExposure;
     ofParameter<float> depthMin;
     ofParameter<float> depthMax;
 
 private:
     rs2::device     _device;
     int             _curDeviceID;
-    
+
     rs2::config     _config;
     rs2::pipeline   _pipeline;
     rs2::colorizer  _colorizer;
     rs2::points     _points;
     rs2::pointcloud _pointcloud;
-    bool            _useThread;
     bool            _setupFinished;
+    bool            _colorEnabled;
+    bool            _irEnabled;
+	bool            _depthEnabled;
+	bool            _pointcloudEnabled;
     bool            _pipelineStarted;
-    bool            _colorEnabled, _irEnabled, _depthEnabled, _pointcloudEnabled;
+    bool            _useThread;
     int             _colorWidth, _irWidth, _depthWidth;
     int             _colorHeight, _irHeight, _depthHeight;
-    
+
     uint8_t         *_colBuff, *_irBuff, *_depthBuff;
     uint16_t        *_rawDepthBuff;
     ofVboMesh       _mesh;
