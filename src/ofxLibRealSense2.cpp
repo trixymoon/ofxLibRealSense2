@@ -18,8 +18,13 @@ ofxLibRealSense2::ofxLibRealSense2() :
 	_depthEnabled(false),
 	_pointcloudEnabled(false),
 	_pipelineStarted(false),
-	_useThread(false)
-{}
+	_useThread(false),
+	_hasNewColor(false),
+	_hasNewIr(false),
+	_hasNewDepth(false),
+	_hasNewFrame(false)
+{
+}
 
 int ofxLibRealSense2::getDeviceCount()
 {
@@ -99,16 +104,17 @@ void ofxLibRealSense2::startPipeline(bool useThread)
         startThread();
 }
 
+
 void ofxLibRealSense2::enablePointcloud(bool enabled)
 {
     _pointcloudEnabled = enabled;
     if (!_depthEnabled) ofLogWarning() << "processing a pointcloud requires to enable depth data!";
 }
 
+
 void ofxLibRealSense2::hwReset(rs2_error ** error) {
 	//rs2_hardware_reset(&_device, error);
 }
-
 
 void ofxLibRealSense2::threadedFunction()
 {
