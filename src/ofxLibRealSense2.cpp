@@ -277,7 +277,7 @@ void ofxLibRealSense2::setupParams(const std::string & serialNumber)
         }
     }));
 
-    params.setName("D400_" + serialNumber);
+    params.setName("RS2 " + serialNumber);
     params.add(autoExposure, enableEmitter, irExposure, depthMin, depthMax);
 }
 
