@@ -73,18 +73,23 @@ private:
     bool            _setupFinished;
     bool            _colorEnabled;
     bool            _irEnabled;
-	bool            _depthEnabled;
-	bool            _pointcloudEnabled;
+    bool            _depthEnabled;
+    bool            _pointcloudEnabled;
     bool            _pipelineStarted;
     bool            _useThread;
     int             _colorWidth, _irWidth, _depthWidth;
     int             _colorHeight, _irHeight, _depthHeight;
 
-    uint8_t         *_colBuff, *_irBuff, *_depthBuff;
+    uint8_t         *_colBuff;
+    uint8_t         *_irBuff;
+    uint8_t         *_depthBuff;
     uint16_t        *_rawDepthBuff;
     ofVboMesh       _mesh;
     ofTexture       _colTex, _irTex, _depthTex, _rawDepthTex;
-    bool            _hasNewColor, _hasNewIr, _hasNewDepth, _hasNewFrame;
+    bool            _hasNewColor;
+    bool            _hasNewIr;
+    bool            _hasNewDepth;
+    bool            _hasNewFrame;
 
     ofEventListeners _paramListeners;
 

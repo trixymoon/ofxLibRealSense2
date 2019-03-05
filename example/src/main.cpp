@@ -14,8 +14,7 @@ int main( ){
 	    ofRunApp(new ofApp());
     }
     catch (std::exception & e) {
-		std::cerr<<endl<<"Error: "<<e.what()<<std::endl<<std::endl;
     	// ofSystemAlertDialog(e.what());										// Gtk-ERROR **: GTK+ 2.x symbols detected. Using GTK+ 2.x and GTK+ 3 in the same process is not supported
-    	ofLogFatalError("RSBLOB")<<e.what();
+    	ofLogFatalError("")<<e.what();
     }
 }
