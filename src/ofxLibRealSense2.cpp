@@ -11,7 +11,8 @@
 
 using namespace::std;
 
-ofxLibRealSense2::ofxLibRealSense2() :
+ofxLibRealSense2::ofxLibRealSense2(int deviceID)
+throw(std::runtime_error) :
 	_setupFinished(false),
 	_colorEnabled(false),
 	_irEnabled(false),
@@ -19,49 +20,146 @@ ofxLibRealSense2::ofxLibRealSense2() :
 	_pointcloudEnabled(false),
 	_pipelineStarted(false),
 	_useThread(false),
+	_depthFrame(nullptr),
 	_hasNewColor(false),
 	_hasNewIr(false),
 	_hasNewDepth(false),
 	_hasNewFrame(false)
 {
+	rs2::context ctx;
+    rs2::device_list devList = ctx.query_devices();
+
+    if (devList.size() <= 0) {
+        throw std::runtime_error{"RealSense device not found!"};
+    }
+    if (deviceID >= devList.size()) {
+        throw std::runtime_error{"Requested device id is invalid!"};
+    }
+
+    _device = devList[deviceID];
+    std::string serial = _device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+
+    ofLogVerbose()<< "Try to open device: "
+    		<< _device.get_info(RS2_CAMERA_INFO_NAME)
+    		<< " | Serial number: " << serial << std::endl << std::endl;
+
+    _config.enable_device(serial);
+    _setupFinished = true;
+    setupParams(serial);
 }
 
-int ofxLibRealSense2::getDeviceCount()
+ofxLibRealSense2::ofxLibRealSense2(std::string __serial)
+throw(std::runtime_error) :
+	_setupFinished(false),
+	_colorEnabled(false),
+	_irEnabled(false),
+	_depthEnabled(false),
+	_pointcloudEnabled(false),
+	_pipelineStarted(false),
+	_useThread(false),
+	_depthFrame(nullptr),
+	_hasNewColor(false),
+	_hasNewIr(false),
+	_hasNewDepth(false),
+	_hasNewFrame(false)
 {
-    // query device
+	rs2::context ctx;
+    rs2::device_list devList = ctx.query_devices();
+    std::string serial = "";
+    bool devFound = false;
+
+    if (devList.size() <= 0) {
+        throw std::runtime_error{"RealSense device not found!"};
+    }
+
+    for (auto&& dev : devList) {
+    	serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+    	if (__serial.compare(serial) == 0) {
+    		devFound = true;
+    		_device  = dev;
+    		break;
+    	}
+    }
+    if (!devFound) {
+    	throw std::runtime_error{"RealSense device with serial "
+    		+ __serial +" not found!"};
+    }
+
+    ofLogVerbose()<< "Try to open device: "
+    		<< _device.get_info(RS2_CAMERA_INFO_NAME)
+    		<< " | Serial number: " << serial << std::endl << std::endl;
+
+    _config.enable_device(serial);
+    _setupFinished = true;
+    setupParams(serial);
+}
+
+ofxLibRealSense2::~ofxLibRealSense2() {
+    waitForThread();
+    stopThread();
+    if (_pipelineStarted) _pipeline.stop();
+}
+
+/* --------------------------- STATIC METHODS ------------------------------ */
+
+void ofxLibRealSense2::deviceInfo() {
+    rs2::context ctx;
+    rs2::device_list devList = ctx.query_devices();
+	std::string name   = "";
+	std::string serial = "";
+	std::string prodId = "";
+	std::string fw     = "";
+
+    for (auto&& dev : devList) {
+		name   = dev.get_info(RS2_CAMERA_INFO_NAME);
+		serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+		prodId = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+		fw     = "";
+
+		if (name == "Intel RealSense D415" || name == "Intel RealSense D435") {
+			fw = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+		}
+		std::cout<<"\nDevice name: "<< name <<"\nSerial number: "
+				<< serial <<"\nFirmware: "<< fw <<"\nProdID "<< prodId
+				<< std::endl <<	std::endl;
+    }
+}
+
+void ofxLibRealSense2::resetDevice(const std::string __serial)
+throw(std::runtime_error) {
+    rs2::context ctx;
+    rs2::device_list devList = ctx.query_devices();
+    bool found = false;
+
+    for (auto&& dev : devList) {
+    	std::string serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+    	if (__serial.compare(serial) == 0) {
+    		found = true;
+    		dev.hardware_reset();
+    		break;
+    	}
+    }
+
+    if (!found) {
+    	throw std::runtime_error{"RealSense device with serial "
+    		+ __serial +" not found!"};
+    }
+    else {
+    	std::cout<<"\nReset realsense with serial: "+ __serial +" done."
+    			<<std::endl<<std::endl;
+    }
+}
+
+// static method
+int ofxLibRealSense2::getDeviceCount() {
     rs2::context ctx;
     return ctx.query_devices().size();
 }
 
-
-void ofxLibRealSense2::setupDevice(int deviceID)
-throw(std::runtime_error)
-{
-    // query device
-    rs2::context ctx;
-    rs2::device_list deviceList = ctx.query_devices();
-    
-    if (deviceList.size() <= 0) {
-        throw std::runtime_error{"RealSense device not found!"};
-    }
-    if (deviceID >= deviceList.size()) {
-        throw std::runtime_error{"Requested device id is invalid!"};
-    }
-    
-    _device = deviceList[deviceID];
-    string deviceSerial = _device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-    _config.enable_device(deviceSerial);
-    cout << "Serial number: " << deviceSerial << " | Device name: " << _device.get_info(RS2_CAMERA_INFO_NAME) << endl;
-    
-    _curDeviceID = deviceID;
-    _setupFinished = true;
-    
-    setupParams(deviceSerial);
-}
+/* --------------------------- STATIC METHODS END -------------------------- */
 
 
-void ofxLibRealSense2::setupColor(int width, int height, int fps)
-{
+void ofxLibRealSense2::setupColor(int width, int height, int fps) {
     _colorWidth = width;
     _colorHeight = height;
     _colTex.allocate(_colorWidth, _colorHeight, GL_RGB);
@@ -70,8 +168,7 @@ void ofxLibRealSense2::setupColor(int width, int height, int fps)
 }
 
 
-void ofxLibRealSense2::setupIR(int width, int height, int fps)
-{
+void ofxLibRealSense2::setupIR(int width, int height, int fps) {
     _irWidth = width;
     _irHeight = height;
     _irTex.allocate(_irWidth, _irHeight, GL_LUMINANCE);
@@ -79,9 +176,7 @@ void ofxLibRealSense2::setupIR(int width, int height, int fps)
     _irEnabled = true;
 }
 
-
-void ofxLibRealSense2::setupDepth(int width, int height, int fps)
-{
+void ofxLibRealSense2::setupDepth(int width, int height, int fps) {
     _depthWidth = width;
     _depthHeight = height;
     _depthTex.allocate(_depthWidth, _depthHeight, GL_RGB);
@@ -91,9 +186,7 @@ void ofxLibRealSense2::setupDepth(int width, int height, int fps)
     _depthEnabled = true;
 }
 
-
-void ofxLibRealSense2::startPipeline(bool useThread)
-{
+void ofxLibRealSense2::startPipeline(bool useThread) {
     if(!_setupFinished) return;
     
     _pipeline.start(_config);
@@ -104,61 +197,67 @@ void ofxLibRealSense2::startPipeline(bool useThread)
         startThread();
 }
 
-
-void ofxLibRealSense2::enablePointcloud(bool enabled)
-{
+void ofxLibRealSense2::enablePointcloud(bool enabled) {
     _pointcloudEnabled = enabled;
     if (!_depthEnabled) ofLogWarning() << "processing a pointcloud requires to enable depth data!";
 }
 
-
-void ofxLibRealSense2::hwReset(rs2_error ** error) {
-	//rs2_hardware_reset(&_device, error);
-}
-
-void ofxLibRealSense2::threadedFunction()
-{
+void ofxLibRealSense2::threadedFunction() {
     while(isThreadRunning()) {
         
-        if(lock()) {
+        if (lock()) {
             updateFrameData();
             unlock();
         }
     }
 }
 
+float ofxLibRealSense2::get_distance(int x, int y) const {
+	return _depthFrame->get_distance(x, y);
+}
 
-void ofxLibRealSense2::updateFrameData()
-{
+const uint16_t * ofxLibRealSense2::getDepthRawData() const{
+	return _rawDepthBuff;
+}
+
+void ofxLibRealSense2::updateFrameData() {
     rs2::frameset frameset;
-    if(_pipeline.poll_for_frames(&frameset)) {
-        if(_colorEnabled) {
+
+    if (_pipeline.poll_for_frames(&frameset)) {
+        if (_colorEnabled) {
             rs2::video_frame colFrame = frameset.get_color_frame();
-            _colBuff = (uint8_t*)colFrame.get_data();
+            // _colBuff = (uint8_t*)colFrame.get_data();
+            _colBuff = reinterpret_cast<uint8_t*>(const_cast<void*>(colFrame.get_data()));
             _colorWidth = colFrame.get_width();
             _colorHeight = colFrame.get_height();
             _hasNewColor = true;
         }
-        if(_irEnabled) {
+        if (_irEnabled) {
             rs2::video_frame irFrame = frameset.get_infrared_frame();
-            _irBuff = (uint8_t*)irFrame.get_data();
+            //_irBuff = (uint8_t*)irFrame.get_data();
+            _irBuff = reinterpret_cast<uint8_t*>(const_cast<void*>(irFrame.get_data()));
             _irWidth = irFrame.get_width();
             _irHeight = irFrame.get_height();
             _hasNewIr = true;
         }
-        if(_depthEnabled) {
-            rs2::depth_frame depthFrame = frameset.get_depth_frame();
-            _rawDepthBuff = (uint16_t*)depthFrame.get_data();
+        if (_depthEnabled) {
+
+        	_depthFrame = make_shared <rs2::depth_frame>(frameset.get_depth_frame());
+
+        	// rs2::depth_frame depthFrame = frameset.get_depth_frame();
+
+            // _rawDepthBuff = (uint16_t*)depthFrame.get_data();
+            _rawDepthBuff = reinterpret_cast<uint16_t*>(const_cast<void*>(_depthFrame->get_data()));
             
-            rs2::video_frame normalizedDepthFrame = _colorizer.process(depthFrame);
+            rs2::video_frame normalizedDepthFrame = _colorizer.process(*_depthFrame);
             _depthBuff = (uint8_t*)normalizedDepthFrame.get_data();
             
-            _depthWidth = depthFrame.get_width();
-            _depthHeight = depthFrame.get_height();
+            _depthWidth = _depthFrame->get_width();
+            _depthHeight = _depthFrame->get_height();
             _hasNewDepth = true;
             
             if (_pointcloudEnabled) {
-                _points = _pointcloud.process(depthFrame);
+                _points = _pointcloud.process(*_depthFrame);
             }
         }
     }
@@ -287,9 +386,3 @@ void ofxLibRealSense2::setupParams(const std::string & serialNumber)
     params.add(autoExposure, enableEmitter, irExposure, depthMin, depthMax);
 }
 
-void ofxLibRealSense2::exit()
-{
-    waitForThread();
-    stopThread();
-    if (_pipelineStarted) _pipeline.stop();
-}
