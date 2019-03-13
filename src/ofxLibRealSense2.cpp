@@ -13,20 +13,20 @@ using namespace::std;
 
 ofxLibRealSense2::ofxLibRealSense2(int deviceID)
 throw(std::runtime_error) :
-	_setupFinished(false),
-	_colorEnabled(false),
-	_irEnabled(false),
-	_depthEnabled(false),
-	_pointcloudEnabled(false),
-	_pipelineStarted(false),
-	_useThread(false),
-	_depthFrame(nullptr),
-	_hasNewColor(false),
-	_hasNewIr(false),
-	_hasNewDepth(false),
-	_hasNewFrame(false)
+    _setupFinished(false),
+    _colorEnabled(false),
+    _irEnabled(false),
+    _depthEnabled(false),
+    _pointcloudEnabled(false),
+    _pipelineStarted(false),
+    _useThread(false),
+    _depthFrame(nullptr),
+    _hasNewColor(false),
+    _hasNewIr(false),
+    _hasNewDepth(false),
+    _hasNewFrame(false)
 {
-	rs2::context ctx;
+    rs2::context ctx;
     rs2::device_list devList = ctx.query_devices();
 
     if (devList.size() <= 0) {
@@ -40,8 +40,8 @@ throw(std::runtime_error) :
     std::string serial = _device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
 
     ofLogVerbose()<< "Try to open device: "
-    		<< _device.get_info(RS2_CAMERA_INFO_NAME)
-    		<< " | Serial number: " << serial << std::endl << std::endl;
+            << _device.get_info(RS2_CAMERA_INFO_NAME)
+            << " | Serial number: " << serial << std::endl << std::endl;
 
     _config.enable_device(serial);
     _setupFinished = true;
@@ -50,20 +50,20 @@ throw(std::runtime_error) :
 
 ofxLibRealSense2::ofxLibRealSense2(std::string __serial)
 throw(std::runtime_error) :
-	_setupFinished(false),
-	_colorEnabled(false),
-	_irEnabled(false),
-	_depthEnabled(false),
-	_pointcloudEnabled(false),
-	_pipelineStarted(false),
-	_useThread(false),
-	_depthFrame(nullptr),
-	_hasNewColor(false),
-	_hasNewIr(false),
-	_hasNewDepth(false),
-	_hasNewFrame(false)
+    _setupFinished(false),
+    _colorEnabled(false),
+    _irEnabled(false),
+    _depthEnabled(false),
+    _pointcloudEnabled(false),
+    _pipelineStarted(false),
+    _useThread(false),
+    _depthFrame(nullptr),
+    _hasNewColor(false),
+    _hasNewIr(false),
+    _hasNewDepth(false),
+    _hasNewFrame(false)
 {
-	rs2::context ctx;
+    rs2::context ctx;
     rs2::device_list devList = ctx.query_devices();
     std::string serial = "";
     bool devFound = false;
@@ -73,21 +73,21 @@ throw(std::runtime_error) :
     }
 
     for (auto&& dev : devList) {
-    	serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-    	if (__serial.compare(serial) == 0) {
-    		devFound = true;
-    		_device  = dev;
-    		break;
-    	}
+        serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        if (__serial.compare(serial) == 0) {
+            devFound = true;
+            _device  = dev;
+            break;
+        }
     }
     if (!devFound) {
-    	throw std::runtime_error{"RealSense device with serial "
-    		+ __serial +" not found!"};
+        throw std::runtime_error{"RealSense device with serial "
+            + __serial +" not found!"};
     }
 
     ofLogVerbose()<< "Try to open device: "
-    		<< _device.get_info(RS2_CAMERA_INFO_NAME)
-    		<< " | Serial number: " << serial << std::endl << std::endl;
+            << _device.get_info(RS2_CAMERA_INFO_NAME)
+            << " | Serial number: " << serial << std::endl << std::endl;
 
     _config.enable_device(serial);
     _setupFinished = true;
@@ -105,23 +105,23 @@ ofxLibRealSense2::~ofxLibRealSense2() {
 void ofxLibRealSense2::deviceInfo() {
     rs2::context ctx;
     rs2::device_list devList = ctx.query_devices();
-	std::string name   = "";
-	std::string serial = "";
-	std::string prodId = "";
-	std::string fw     = "";
+    std::string name   = "";
+    std::string serial = "";
+    std::string prodId = "";
+    std::string fw     = "";
 
     for (auto&& dev : devList) {
-		name   = dev.get_info(RS2_CAMERA_INFO_NAME);
-		serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-		prodId = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
-		fw     = "";
+        name   = dev.get_info(RS2_CAMERA_INFO_NAME);
+        serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        prodId = dev.get_info(RS2_CAMERA_INFO_PRODUCT_ID);
+        fw     = "";
 
-		if (name == "Intel RealSense D415" || name == "Intel RealSense D435") {
-			fw = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
-		}
-		std::cout<<"\nDevice name: "<< name <<"\nSerial number: "
-				<< serial <<"\nFirmware: "<< fw <<"\nProdID "<< prodId
-				<< std::endl <<	std::endl;
+        if (name == "Intel RealSense D415" || name == "Intel RealSense D435") {
+            fw = dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION);
+        }
+        std::cout<<"\nDevice name: "<< name <<"\nSerial number: "
+                << serial <<"\nFirmware: "<< fw <<"\nProdID "<< prodId
+                << std::endl << std::endl;
     }
 }
 
@@ -132,21 +132,21 @@ throw(std::runtime_error) {
     bool found = false;
 
     for (auto&& dev : devList) {
-    	std::string serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-    	if (__serial.compare(serial) == 0) {
-    		found = true;
-    		dev.hardware_reset();
-    		break;
-    	}
+        std::string serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+        if (__serial.compare(serial) == 0) {
+            found = true;
+            dev.hardware_reset();
+            break;
+        }
     }
 
     if (!found) {
-    	throw std::runtime_error{"RealSense device with serial "
-    		+ __serial +" not found!"};
+        throw std::runtime_error{"RealSense device with serial "
+            + __serial +" not found!"};
     }
     else {
-    	std::cout<<"\nReset realsense with serial: "+ __serial +" done."
-    			<<std::endl<<std::endl;
+        std::cout<<"\nReset realsense with serial: "+ __serial +" done."
+                <<std::endl<<std::endl;
     }
 }
 
@@ -213,11 +213,11 @@ void ofxLibRealSense2::threadedFunction() {
 }
 
 float ofxLibRealSense2::get_distance(int x, int y) const {
-	return _depthFrame->get_distance(x, y);
+    return _depthFrame->get_distance(x, y);
 }
 
 const uint16_t * ofxLibRealSense2::getDepthRawData() const{
-	return _rawDepthBuff;
+    return _rawDepthBuff;
 }
 
 void ofxLibRealSense2::updateFrameData() {
@@ -242,9 +242,9 @@ void ofxLibRealSense2::updateFrameData() {
         }
         if (_depthEnabled) {
 
-        	_depthFrame = make_shared <rs2::depth_frame>(frameset.get_depth_frame());
+            _depthFrame = make_shared <rs2::depth_frame>(frameset.get_depth_frame());
 
-        	// rs2::depth_frame depthFrame = frameset.get_depth_frame();
+            // rs2::depth_frame depthFrame = frameset.get_depth_frame();
 
             // _rawDepthBuff = (uint16_t*)depthFrame.get_data();
             _rawDepthBuff = reinterpret_cast<uint16_t*>(const_cast<void*>(_depthFrame->get_data()));

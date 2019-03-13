@@ -40,11 +40,11 @@ private:
     uint16_t        *_rawDepthBuff;
     ofVboMesh        _mesh;
     ofTexture        _colTex;
-	ofTexture		 _irTex;
-	ofTexture        _depthTex;
-	ofTexture		 _rawDepthTex;
+    ofTexture        _irTex;
+    ofTexture        _depthTex;
+    ofTexture        _rawDepthTex;
 
-	std::shared_ptr<rs2::depth_frame> _depthFrame;
+    std::shared_ptr<rs2::depth_frame> _depthFrame;
 
     bool             _hasNewColor;
     bool             _hasNewIr;
@@ -96,8 +96,8 @@ public:
     ofxLibRealSense2(int deviceID) throw(std::runtime_error);
     ofxLibRealSense2(std::string serial) throw(std::runtime_error);
 
-	/** class destructor */
-	~ofxLibRealSense2();
+    /** class destructor */
+    ~ofxLibRealSense2();
 
     /* gui params */
     ofParameterGroup   params;
