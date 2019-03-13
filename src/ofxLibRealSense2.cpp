@@ -167,7 +167,6 @@ void ofxLibRealSense2::setupColor(int width, int height, int fps) {
     _colorEnabled = true;
 }
 
-
 void ofxLibRealSense2::setupIR(int width, int height, int fps) {
     _irWidth = width;
     _irHeight = height;
@@ -187,24 +186,27 @@ void ofxLibRealSense2::setupDepth(int width, int height, int fps) {
 }
 
 void ofxLibRealSense2::startPipeline(bool useThread) {
-    if(!_setupFinished) return;
+    if (!_setupFinished)
+    	return;
     
     _pipeline.start(_config);
     _pipelineStarted=true;
     
     _useThread = useThread;
-    if(_useThread)
+    if (_useThread)
         startThread();
 }
 
 void ofxLibRealSense2::enablePointcloud(bool enabled) {
     _pointcloudEnabled = enabled;
-    if (!_depthEnabled) ofLogWarning() << "processing a pointcloud requires to enable depth data!";
+    if (!_depthEnabled) {
+    	ofLogWarning() << "processing a pointcloud"
+    			<<" requires to enable depth data!";
+    }
 }
 
 void ofxLibRealSense2::threadedFunction() {
     while(isThreadRunning()) {
-        
         if (lock()) {
             updateFrameData();
             unlock();
@@ -226,7 +228,6 @@ void ofxLibRealSense2::updateFrameData() {
     if (_pipeline.poll_for_frames(&frameset)) {
         if (_colorEnabled) {
             rs2::video_frame colFrame = frameset.get_color_frame();
-            // _colBuff = (uint8_t*)colFrame.get_data();
             _colBuff = reinterpret_cast<uint8_t*>(const_cast<void*>(colFrame.get_data()));
             _colorWidth = colFrame.get_width();
             _colorHeight = colFrame.get_height();
@@ -234,24 +235,18 @@ void ofxLibRealSense2::updateFrameData() {
         }
         if (_irEnabled) {
             rs2::video_frame irFrame = frameset.get_infrared_frame();
-            //_irBuff = (uint8_t*)irFrame.get_data();
             _irBuff = reinterpret_cast<uint8_t*>(const_cast<void*>(irFrame.get_data()));
             _irWidth = irFrame.get_width();
             _irHeight = irFrame.get_height();
             _hasNewIr = true;
         }
         if (_depthEnabled) {
-
-            _depthFrame = make_shared <rs2::depth_frame>(frameset.get_depth_frame());
-
             // rs2::depth_frame depthFrame = frameset.get_depth_frame();
-
-            // _rawDepthBuff = (uint16_t*)depthFrame.get_data();
+            _depthFrame = make_shared <rs2::depth_frame>(frameset.get_depth_frame());
             _rawDepthBuff = reinterpret_cast<uint16_t*>(const_cast<void*>(_depthFrame->get_data()));
-            
-            rs2::video_frame normalizedDepthFrame = _colorizer.process(*_depthFrame);
-            _depthBuff = (uint8_t*)normalizedDepthFrame.get_data();
-            
+
+            rs2::video_frame normFrame = _colorizer.process(*_depthFrame);		// normalized Depth Frame
+            _depthBuff = reinterpret_cast<uint8_t*>(const_cast<void*>(normFrame.get_data()));
             _depthWidth = _depthFrame->get_width();
             _depthHeight = _depthFrame->get_height();
             _hasNewDepth = true;
@@ -264,9 +259,9 @@ void ofxLibRealSense2::updateFrameData() {
 }
 
 
-void ofxLibRealSense2::update()
-{
-    if(!_pipelineStarted) return;
+void ofxLibRealSense2::update() {
+    if (!_pipelineStarted)
+    	return;
     
     rs2::frameset frameset;
     if( !_useThread ) {
@@ -298,19 +293,18 @@ void ofxLibRealSense2::update()
         _hasNewDepth = false;
     }
 
-    if(_irBuff && _hasNewIr) {
+    if (_irBuff && _hasNewIr) {
         _irTex.loadData(_irBuff, _irWidth, _irHeight, GL_LUMINANCE);
         _hasNewIr = false;
     }
 
-    if(_colBuff && _hasNewColor) {
+    if (_colBuff && _hasNewColor) {
         _colTex.loadData(_colBuff, _colorWidth, _colorHeight, GL_RGB);
         _hasNewColor = false;
     }
 }
 
-void ofxLibRealSense2::setupParams(const std::string & serialNumber)
-{
+void ofxLibRealSense2::setupParams(const std::string & serialNumber) {
     rs2::sensor sensor = _device.query_sensors()[0];
     rs2::option_range orExp = sensor.get_option_range(rs2_option::RS2_OPTION_EXPOSURE);
     rs2::option_range orGain = sensor.get_option_range(rs2_option::RS2_OPTION_GAIN);
