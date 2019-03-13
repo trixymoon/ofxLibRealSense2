@@ -13,6 +13,6 @@ public:
     void exit();
     void keyPressed(int key);
 
-    ofxLibRealSense2 _realsense2;
+    std::shared_ptr<ofxLibRealSense2> _realsense2 = std::make_shared<ofxLibRealSense2>(0);
     ofxPanel         _gui;
 };

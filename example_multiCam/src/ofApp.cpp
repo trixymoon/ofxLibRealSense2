@@ -5,19 +5,15 @@ void ofApp::setup()
 throw(std::runtime_error){
 
     ofSetVerticalSync(false);
-
     _gui.setup("appSettings.xml");
 
     int deviceCnt = ofxLibRealSense2::getDeviceCount();
     for(int i=0; i<deviceCnt; ++i) {
-        std::shared_ptr<ofxLibRealSense2> rs = std::make_shared<ofxLibRealSense2>();
-        rs->setupDevice(i);
+        std::shared_ptr<ofxLibRealSense2> rs = std::make_shared<ofxLibRealSense2>(i);
         rs->setupColor(640, 360, 30);
         rs->startPipeline(true);
         _gui.add(rs->params);
-
         _rsList.push_back(rs);
-
     }
 }
 
@@ -44,13 +40,12 @@ void ofApp::draw(){
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
 }
 
 void ofApp::exit()
 {
     for(int i=0; i<_rsList.size(); ++i) {
-        _rsList[i]->exit();
+        _rsList[i].reset();
     }
     _rsList.clear();
 }
